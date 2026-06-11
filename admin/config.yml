@@ -1,4 +1,3 @@
-cat > admin/config.yml << 'EOF'
 backend:
   name: git-gateway
   branch: main
@@ -18,4 +17,3 @@ collections:
       - {label: "Description", name: "description", widget: "text"}
       - {label: "Image", name: "image", widget: "image"}
       - {label: "Tags", name: "tags", widget: "string"}
-EOF

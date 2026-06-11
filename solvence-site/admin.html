@@ -1,0 +1,727 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Portfolio Admin — Solvēnce</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <!-- Quill WYSIWYG Editor -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg: #0d0d14;
+      --surface: #16162a;
+      --surface2: #1e1e35;
+      --border: rgba(201,168,76,0.2);
+      --gold: #c9a84c;
+      --gold-light: #e8d5a3;
+      --text: #e0e0e8;
+      --text-dim: rgba(224,224,232,0.55);
+      --green: #7ec86e;
+      --red: #e05c5c;
+      --radius: 6px;
+      --font: 'Georgia', serif;
+      --mono: 'Courier New', monospace;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); margin: 0; padding: 0; }
+
+    /* Top bar */
+    .admin-topbar {
+      background: var(--surface);
+      border-bottom: 2px solid var(--gold);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .admin-topbar .brand { font-size: 1.3em; font-weight: bold; color: var(--gold); letter-spacing: 0.1em; }
+    .admin-topbar .brand span { color: var(--text-dim); font-size: 0.7em; display: block; letter-spacing: 0.05em; font-weight: normal; }
+    .admin-topbar .nav-links a {
+      color: var(--text-dim); text-decoration: none; margin-left: 16px; font-size: 0.85em;
+      letter-spacing: 0.05em; transition: color 0.2s;
+    }
+    .admin-topbar .nav-links a:hover { color: var(--gold); }
+
+    /* Layout */
+    .admin-layout { display: flex; min-height: calc(100vh - 60px); }
+    .admin-sidebar {
+      width: 220px; background: var(--surface); border-right: 1px solid var(--border);
+      flex-shrink: 0; padding: 20px 0;
+    }
+    .admin-sidebar h3 {
+      font-size: 0.65em; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-dim); padding: 0 20px 10px; margin: 16px 0 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-item {
+      display: block; padding: 10px 20px; color: var(--text-dim);
+      text-decoration: none; font-size: 0.88em; cursor: pointer;
+      border-left: 3px solid transparent; transition: all 0.18s;
+    }
+    .sidebar-item:hover, .sidebar-item.active {
+      color: var(--gold); border-left-color: var(--gold);
+      background: rgba(201,168,76,0.06);
+    }
+
+    /* Main content */
+    .admin-main { flex: 1; padding: 32px 36px; overflow-y: auto; }
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+
+    /* Section header */
+    .panel-header { margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+    .panel-header h1 { font-size: 1.6em; color: var(--gold-light); margin: 0 0 4px; }
+    .panel-header p { color: var(--text-dim); margin: 0; font-size: 0.9em; }
+
+    /* Form elements */
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block; font-size: 0.78em; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 7px;
+    }
+    .form-group input[type=text],
+    .form-group input[type=email],
+    .form-group input[type=tel],
+    .form-group input[type=url],
+    .form-group select,
+    .form-group textarea {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 14px; border-radius: var(--radius);
+      font-size: 0.92em; font-family: var(--font); outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      border-color: var(--gold);
+    }
+    .form-group textarea { min-height: 90px; resize: vertical; }
+    .form-group select option { background: var(--surface2); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:680px){ .form-row { grid-template-columns: 1fr; } }
+
+    /* Quill editor */
+    .ql-toolbar.ql-snow { background: var(--surface2); border-color: var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+    .ql-container.ql-snow { background: var(--surface2); border-color: var(--border); border-radius: 0 0 var(--radius) var(--radius); min-height: 180px; color: var(--text); }
+    .ql-snow .ql-stroke { stroke: var(--text-dim); }
+    .ql-snow .ql-fill { fill: var(--text-dim); }
+    .ql-snow .ql-picker { color: var(--text-dim); }
+    .ql-editor { font-family: var(--font); font-size: 0.95em; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px;
+      border-radius: var(--radius); font-size: 0.85em; letter-spacing: 0.08em;
+      text-transform: uppercase; font-weight: 700; cursor: pointer; border: none;
+      transition: all 0.2s; text-decoration: none; }
+    .btn-gold { background: var(--gold); color: #111; }
+    .btn-gold:hover { background: var(--gold-light); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-green { background: var(--green); color: #111; }
+    .btn-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+    /* Cards / project list */
+    .card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px; margin-top: 20px; }
+    .card-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .card-item img { width: 100%; height: 150px; object-fit: cover; }
+    .card-item .ci-body { padding: 12px; }
+    .card-item h4 { margin: 0 0 4px; color: var(--gold-light); font-size: 0.95em; }
+    .card-item p { font-size: 0.78em; color: var(--text-dim); margin: 0 0 10px; }
+    .card-item .ci-actions { display: flex; gap: 8px; }
+    .ci-actions .btn { padding: 6px 12px; font-size: 0.75em; }
+
+    /* Notice */
+    .notice {
+      background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3);
+      border-radius: var(--radius); padding: 14px 18px; margin-bottom: 22px;
+      font-size: 0.88em; color: var(--gold-light);
+    }
+    .notice strong { color: var(--gold); }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.72em; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .status-live { background: rgba(126,200,110,0.15); color: var(--green); border: 1px solid rgba(126,200,110,0.4); }
+    .status-draft { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid var(--border); }
+
+    /* Image upload area */
+    .upload-area {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 28px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s; background: var(--surface2);
+    }
+    .upload-area:hover { border-color: var(--gold); }
+    .upload-area input[type=file] { display: none; }
+    .upload-area .upload-icon { font-size: 2.5em; margin-bottom: 8px; }
+    .upload-area p { margin: 0; color: var(--text-dim); font-size: 0.88em; }
+    .upload-preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .upload-preview img { width: 100px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+
+    /* Save toast */
+    #save-toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--green); color: #111; padding: 12px 22px;
+      border-radius: var(--radius); font-weight: 700; font-size: 0.88em;
+      opacity: 0; transform: translateY(12px); transition: all 0.3s;
+      z-index: 9999; pointer-events: none;
+    }
+    #save-toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Section divider */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+    /* Profile fields */
+    .profile-avatar {
+      width: 90px; height: 90px; border-radius: 50%;
+      object-fit: cover; border: 3px solid var(--gold); margin-bottom: 14px;
+    }
+
+    /* Tabs */
+    .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab-btn {
+      padding: 10px 20px; background: none; border: none; border-bottom: 3px solid transparent;
+      color: var(--text-dim); cursor: pointer; font-size: 0.85em; letter-spacing: 0.08em;
+      text-transform: uppercase; font-family: var(--font); transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Project form modal backdrop */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 32px; width: 90%; max-width: 580px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-box h2 { color: var(--gold-light); margin: 0 0 20px; font-size: 1.2em; }
+    .modal-close { float: right; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.4em; }
+
+    @media(max-width:640px){
+      .admin-sidebar { width: 0; display: none; }
+      .admin-main { padding: 20px 16px; }
+      .admin-topbar { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="admin-topbar">
+  <div class="brand">
+    Solvēnce
+    <span>Portfolio Admin Panel</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" target="_blank">↗ View Site</a>
+    <a href="#" onclick="showToast('Changes saved locally!')">💾 Save</a>
+  </div>
+</div>
+
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <h3>Portfolio</h3>
+    <a class="sidebar-item active" onclick="showPanel('dashboard')">📊 Dashboard</a>
+    <a class="sidebar-item" onclick="showPanel('design')">✏️ Design Projects</a>
+    <a class="sidebar-item" onclick="showPanel('construction')">🏗 Construction</a>
+    <a class="sidebar-item" onclick="showPanel('permaculture')">🌱 Permaculture</a>
+    <a class="sidebar-item" onclick="showPanel('music')">🎼 Music</a>
+    <h3>Site Settings</h3>
+    <a class="sidebar-item" onclick="showPanel('profile')">👤 Profile &amp; Brand</a>
+    <a class="sidebar-item" onclick="showPanel('contact')">📬 Contact Info</a>
+    <a class="sidebar-item" onclick="showPanel('homepage')">🏠 Homepage Text</a>
+    <h3>Instructions</h3>
+    <a class="sidebar-item" onclick="showPanel('help')">❓ How to Publish</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+
+    <!-- DASHBOARD -->
+    <div class="admin-panel active" id="panel-dashboard">
+      <div class="panel-header">
+        <h1>Welcome back, Makworo ✦</h1>
+        <p>Your Solvēnce portfolio admin. Update content here, then save the files to your GitHub repository.</p>
+      </div>
+      <div class="notice">
+        <strong>📌 How this works:</strong> This admin page stores your content in your browser's local storage as you work. When ready to publish, use the <strong>Export HTML</strong> buttons in each section, then upload the files to your GitHub Pages repository.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:28px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center">
+          <div style="font-size:1.8em;color:var(--gold)" id="count-design">0</div>
+          <div style="font-size:0.78em;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase">Design Projects</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center">
+          <div style="font-size:1.8em;color:var(--gold)" id="count-construction">0</div>
+          <div style="font-size:0.78em;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase">Construction Projects</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center">
+          <div style="font-size:1.8em;color:var(--gold)" id="count-permaculture">0</div>
+          <div style="font-size:0.78em;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase">Permaculture Projects</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center">
+          <div style="font-size:1.8em;color:var(--gold)" id="count-music">0</div>
+          <div style="font-size:0.78em;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase">Music Pieces</div>
+        </div>
+      </div>
+      <h3 style="color:var(--gold-light)">Quick Actions</h3>
+      <div class="btn-bar">
+        <button class="btn btn-gold" onclick="showPanel('design');openModal('design')">+ Add Design Project</button>
+        <button class="btn btn-outline" onclick="showPanel('construction');openModal('construction')">+ Add Construction Project</button>
+        <button class="btn btn-outline" onclick="showPanel('permaculture');openModal('permaculture')">+ Add Permaculture Project</button>
+        <button class="btn btn-outline" onclick="showPanel('music');openModal('music')">+ Add Music Piece</button>
+      </div>
+    </div>
+
+    <!-- DESIGN -->
+    <div class="admin-panel" id="panel-design">
+      <div class="panel-header">
+        <h1>Design &amp; Visualization Projects</h1>
+        <p>Manage your SketchUp, Adobe, and Quantifier Pro project showcase.</p>
+      </div>
+      <div class="btn-bar" style="margin-bottom:20px">
+        <button class="btn btn-gold" onclick="openModal('design')">+ Add Project</button>
+      </div>
+      <div class="card-list" id="list-design">
+        <div style="color:var(--text-dim);font-size:0.88em;grid-column:1/-1">No projects yet. Click "+ Add Project" to begin.</div>
+      </div>
+    </div>
+
+    <!-- CONSTRUCTION -->
+    <div class="admin-panel" id="panel-construction">
+      <div class="panel-header">
+        <h1>Construction &amp; Site Management</h1>
+        <p>Document your real construction and site management projects with photos and descriptions.</p>
+      </div>
+      <div class="btn-bar" style="margin-bottom:20px">
+        <button class="btn btn-gold" onclick="openModal('construction')">+ Add Project</button>
+      </div>
+      <div class="card-list" id="list-construction">
+        <div style="color:var(--text-dim);font-size:0.88em;grid-column:1/-1">No projects yet. Click "+ Add Project" to begin.</div>
+      </div>
+    </div>
+
+    <!-- PERMACULTURE -->
+    <div class="admin-panel" id="panel-permaculture">
+      <div class="panel-header">
+        <h1>Permaculture &amp; Garden Systems</h1>
+        <p>Showcase your garden designs, food forests, and living system projects.</p>
+      </div>
+      <div class="btn-bar" style="margin-bottom:20px">
+        <button class="btn btn-gold" onclick="openModal('permaculture')">+ Add Project</button>
+      </div>
+      <div class="card-list" id="list-permaculture">
+        <div style="color:var(--text-dim);font-size:0.88em;grid-column:1/-1">No projects yet. Click "+ Add Project" to begin.</div>
+      </div>
+    </div>
+
+    <!-- MUSIC -->
+    <div class="admin-panel" id="panel-music">
+      <div class="panel-header">
+        <h1>Music &amp; Harmony</h1>
+        <p>Add your sheet music compositions, audio samples, and music training materials.</p>
+      </div>
+      <div class="btn-bar" style="margin-bottom:20px">
+        <button class="btn btn-gold" onclick="openModal('music')">+ Add Music Piece</button>
+      </div>
+      <div class="card-list" id="list-music">
+        <div style="color:var(--text-dim);font-size:0.88em;grid-column:1/-1">No pieces yet. Click "+ Add Music Piece" to begin.</div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="admin-panel" id="panel-profile">
+      <div class="panel-header">
+        <h1>Profile &amp; Brand</h1>
+        <p>Update your personal profile, bio, and brand identity details.</p>
+      </div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="p-name" placeholder="Makworo" />
+      </div>
+      <div class="form-group">
+        <label>Brand Name</label>
+        <input type="text" id="p-brand" placeholder="Solvēnce / McQworow" />
+      </div>
+      <div class="form-group">
+        <label>Tagline</label>
+        <input type="text" id="p-tagline" placeholder="Designing Solutions. Living Purpose." />
+      </div>
+      <div class="form-group">
+        <label>Short Bio (shown on About page)</label>
+        <div id="bio-editor" style="height:160px"></div>
+      </div>
+      <div class="form-group">
+        <label>Vision Statement</label>
+        <textarea id="p-vision" placeholder="To Prepare a People to Stand..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Mission Statement</label>
+        <textarea id="p-mission" placeholder="To lead in empowering..."></textarea>
+      </div>
+      <div class="btn-bar">
+        <button class="btn btn-gold" onclick="saveProfile()">💾 Save Profile</button>
+        <button class="btn btn-outline" onclick="loadProfile()">↺ Reload</button>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="admin-panel" id="panel-contact">
+      <div class="panel-header">
+        <h1>Contact Information</h1>
+        <p>Update your public contact details across all pages.</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="c-phone" placeholder="(+254) 727 852261" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="c-email" placeholder="info@solvence.com" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Physical Address / Location</label>
+        <input type="text" id="c-address" placeholder="Kisii, Kenya" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Twitter / X URL</label>
+          <input type="url" id="c-twitter" placeholder="https://twitter.com/..." />
+        </div>
+        <div class="form-group">
+          <label>Instagram URL</label>
+          <input type="url" id="c-instagram" placeholder="https://instagram.com/..." />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Facebook URL</label>
+          <input type="url" id="c-facebook" placeholder="https://facebook.com/..." />
+        </div>
+        <div class="form-group">
+          <label>GitHub URL</label>
+          <input type="url" id="c-github" placeholder="https://github.com/..." />
+        </div>
+      </div>
+      <div class="btn-bar">
+        <button class="btn btn-gold" onclick="saveContact()">💾 Save Contact Info</button>
+      </div>
+    </div>
+
+    <!-- HOMEPAGE -->
+    <div class="admin-panel" id="panel-homepage">
+      <div class="panel-header">
+        <h1>Homepage Content</h1>
+        <p>Edit the intro text and featured section that visitors see first.</p>
+      </div>
+      <div class="form-group">
+        <label>Hero Intro Paragraph</label>
+        <div id="hero-editor" style="height:130px"></div>
+      </div>
+      <div class="form-group">
+        <label>Featured Article Title</label>
+        <input type="text" id="h-featured-title" placeholder="Welcome to The Solvēnce" />
+      </div>
+      <div class="form-group">
+        <label>Featured Article Description</label>
+        <div id="featured-editor" style="height:130px"></div>
+      </div>
+      <div class="btn-bar">
+        <button class="btn btn-gold" onclick="saveHomepage()">💾 Save Homepage</button>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div class="admin-panel" id="panel-help">
+      <div class="panel-header">
+        <h1>How to Publish to GitHub Pages</h1>
+        <p>Step-by-step guide to putting your portfolio online for free.</p>
+      </div>
+      <div class="notice">Your portfolio is hosted free at <strong>yourusername.github.io</strong> using GitHub Pages.</div>
+      <ol style="line-height:2;color:var(--text)">
+        <li>Go to <a href="https://github.com" target="_blank" style="color:var(--gold)">github.com</a> and create a free account if you don't have one.</li>
+        <li>Create a new repository named: <code style="background:var(--surface2);padding:2px 8px;border-radius:3px;color:var(--gold-light)">yourusername.github.io</code></li>
+        <li>Upload ALL your HTML files (index.html, design.html, construction.html, permaculture.html, music.html, about.html, admin.html) to the repository.</li>
+        <li>Also upload your <code style="background:var(--surface2);padding:2px 8px;border-radius:3px;color:var(--gold-light)">assets/</code> and <code style="background:var(--surface2);padding:2px 8px;border-radius:3px;color:var(--gold-light)">images/</code> folders.</li>
+        <li>Go to <strong>Settings → Pages</strong> in your repository and set Source to <strong>main branch / root folder</strong>.</li>
+        <li>Your site will be live at <code style="background:var(--surface2);padding:2px 8px;border-radius:3px;color:var(--gold-light)">https://yourusername.github.io</code> within minutes.</li>
+        <li>To update the site: edit your files locally, then upload the changed files again (or use GitHub Desktop app for easier workflow).</li>
+      </ol>
+      <hr class="divider">
+      <h3 style="color:var(--gold-light)">Adding Images to Your Portfolio</h3>
+      <p style="color:var(--text-dim)">Place all your photos in the <code>images/</code> folder in your repository. Then reference them in project cards as <code>images/yourphoto.jpg</code>. For construction/permaculture, simply upload site photos to that folder.</p>
+      <h3 style="color:var(--gold-light)">Adding Audio Files</h3>
+      <p style="color:var(--text-dim)">Create an <code>audio/</code> folder and upload your .mp3 files there. Reference them in the music page as <code>audio/yourtrack.mp3</code>.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- Project Modal -->
+<div class="modal-backdrop" id="project-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modal-title">Add Project</h2>
+    <input type="hidden" id="modal-section" />
+    <input type="hidden" id="modal-edit-id" />
+    <div class="form-group">
+      <label>Project Title *</label>
+      <input type="text" id="m-title" placeholder="e.g. Residential Villa — Kisii" />
+    </div>
+    <div class="form-group">
+      <label>Subtitle / Location / Year</label>
+      <input type="text" id="m-subtitle" placeholder="e.g. Kisii, Kenya · 2024" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <div id="modal-desc-editor" style="height:140px"></div>
+    </div>
+    <div class="form-group">
+      <label>Image URL or Path</label>
+      <input type="text" id="m-image" placeholder="images/yourphoto.jpg" />
+    </div>
+    <div class="form-group">
+      <label>Tags / Tools Used</label>
+      <input type="text" id="m-tags" placeholder="SketchUp, Photoshop, Excel (comma separated)" />
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="m-status">
+        <option value="live">Live / Published</option>
+        <option value="draft">Draft</option>
+      </select>
+    </div>
+    <div class="btn-bar">
+      <button class="btn btn-gold" onclick="saveProject()">💾 Save Project</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Toast -->
+<div id="save-toast">✓ Saved successfully</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+<script>
+// ─── State ─────────────────────────────────────────────────────────────
+const SECTIONS = ['design','construction','permaculture','music'];
+let projects = JSON.parse(localStorage.getItem('sv_projects') || '{}');
+SECTIONS.forEach(s => { if(!projects[s]) projects[s] = []; });
+
+// ─── Panel Navigation ──────────────────────────────────────────────────
+function showPanel(id) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelector(`[onclick="showPanel('${id}')"]`)?.classList.add('active');
+  if(id === 'dashboard') updateDashboard();
+  SECTIONS.forEach(s => { if(s === id) renderList(s); });
+  if(id === 'profile') loadProfile();
+}
+
+// ─── Dashboard ─────────────────────────────────────────────────────────
+function updateDashboard() {
+  SECTIONS.forEach(s => {
+    const el = document.getElementById('count-' + s);
+    if(el) el.textContent = (projects[s] || []).length;
+  });
+}
+
+// ─── Project List Render ───────────────────────────────────────────────
+function renderList(section) {
+  const list = document.getElementById('list-' + section);
+  if(!list) return;
+  const items = projects[section] || [];
+  if(!items.length) {
+    list.innerHTML = `<div style="color:var(--text-dim);font-size:0.88em;grid-column:1/-1">No projects yet. Click "+ Add Project" to begin.</div>`;
+    return;
+  }
+  list.innerHTML = items.map((p,i) => `
+    <div class="card-item">
+      ${p.image ? `<img src="${p.image}" alt="${p.title}" onerror="this.style.display='none'">` : `<div style="height:80px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:0.8em">No image</div>`}
+      <div class="ci-body">
+        <h4>${p.title}</h4>
+        <p>${p.subtitle || ''}</p>
+        <span class="status-badge status-${p.status || 'live'}">${p.status || 'live'}</span>
+        <div class="ci-actions" style="margin-top:8px">
+          <button class="btn btn-outline" onclick="editProject('${section}',${i})">Edit</button>
+          <button class="btn btn-danger" onclick="deleteProject('${section}',${i})">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Modal ─────────────────────────────────────────────────────────────
+let modalQuill = null;
+function openModal(section, editIndex) {
+  document.getElementById('project-modal').classList.add('open');
+  document.getElementById('modal-section').value = section;
+  document.getElementById('modal-edit-id').value = editIndex !== undefined ? editIndex : '';
+  const titles = {design:'Design / Visualization',construction:'Construction',permaculture:'Permaculture',music:'Music'};
+  document.getElementById('modal-title').textContent = (editIndex !== undefined ? 'Edit' : 'Add') + ' — ' + titles[section];
+
+  if(!modalQuill) {
+    modalQuill = new Quill('#modal-desc-editor', {
+      theme: 'snow',
+      modules: { toolbar: [['bold','italic','underline'],['link'],['clean']] }
+    });
+  }
+
+  // Clear or populate
+  if(editIndex !== undefined) {
+    const p = projects[section][editIndex];
+    document.getElementById('m-title').value = p.title || '';
+    document.getElementById('m-subtitle').value = p.subtitle || '';
+    document.getElementById('m-image').value = p.image || '';
+    document.getElementById('m-tags').value = (p.tags || []).join(', ');
+    document.getElementById('m-status').value = p.status || 'live';
+    modalQuill.root.innerHTML = p.description || '';
+  } else {
+    document.getElementById('m-title').value = '';
+    document.getElementById('m-subtitle').value = '';
+    document.getElementById('m-image').value = '';
+    document.getElementById('m-tags').value = '';
+    document.getElementById('m-status').value = 'live';
+    modalQuill.root.innerHTML = '';
+  }
+}
+function closeModal() {
+  document.getElementById('project-modal').classList.remove('open');
+}
+function saveProject() {
+  const section = document.getElementById('modal-section').value;
+  const editId = document.getElementById('modal-edit-id').value;
+  const title = document.getElementById('m-title').value.trim();
+  if(!title) { alert('Please enter a project title.'); return; }
+  const project = {
+    title,
+    subtitle: document.getElementById('m-subtitle').value.trim(),
+    description: modalQuill ? modalQuill.root.innerHTML : '',
+    image: document.getElementById('m-image').value.trim(),
+    tags: document.getElementById('m-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    status: document.getElementById('m-status').value,
+    created: new Date().toISOString()
+  };
+  if(editId !== '') {
+    projects[section][parseInt(editId)] = project;
+  } else {
+    projects[section].push(project);
+  }
+  localStorage.setItem('sv_projects', JSON.stringify(projects));
+  renderList(section);
+  updateDashboard();
+  closeModal();
+  showToast('Project saved!');
+}
+function editProject(section, index) {
+  showPanel(section);
+  openModal(section, index);
+}
+function deleteProject(section, index) {
+  if(!confirm('Delete this project?')) return;
+  projects[section].splice(index,1);
+  localStorage.setItem('sv_projects', JSON.stringify(projects));
+  renderList(section);
+  updateDashboard();
+  showToast('Project deleted.');
+}
+
+// ─── Profile ───────────────────────────────────────────────────────────
+let bioQuill = null;
+function loadProfile() {
+  if(!bioQuill) {
+    bioQuill = new Quill('#bio-editor', { theme: 'snow',
+      modules:{ toolbar:[['bold','italic','underline'],['link'],['clean']] }});
+  }
+  const p = JSON.parse(localStorage.getItem('sv_profile') || '{}');
+  document.getElementById('p-name').value = p.name || 'Makworo';
+  document.getElementById('p-brand').value = p.brand || 'Solvēnce';
+  document.getElementById('p-tagline').value = p.tagline || 'Designing Solutions. Living Purpose.';
+  document.getElementById('p-vision').value = p.vision || '';
+  document.getElementById('p-mission').value = p.mission || '';
+  bioQuill.root.innerHTML = p.bio || '';
+}
+function saveProfile() {
+  const data = {
+    name: document.getElementById('p-name').value,
+    brand: document.getElementById('p-brand').value,
+    tagline: document.getElementById('p-tagline').value,
+    vision: document.getElementById('p-vision').value,
+    mission: document.getElementById('p-mission').value,
+    bio: bioQuill ? bioQuill.root.innerHTML : ''
+  };
+  localStorage.setItem('sv_profile', JSON.stringify(data));
+  showToast('Profile saved!');
+}
+
+// ─── Contact ───────────────────────────────────────────────────────────
+function saveContact() {
+  const data = {
+    phone: document.getElementById('c-phone').value,
+    email: document.getElementById('c-email').value,
+    address: document.getElementById('c-address').value,
+    twitter: document.getElementById('c-twitter').value,
+    instagram: document.getElementById('c-instagram').value,
+    facebook: document.getElementById('c-facebook').value,
+    github: document.getElementById('c-github').value
+  };
+  localStorage.setItem('sv_contact', JSON.stringify(data));
+  showToast('Contact info saved!');
+}
+(function loadContact(){
+  const c = JSON.parse(localStorage.getItem('sv_contact')||'{}');
+  ['phone','email','address','twitter','instagram','facebook','github'].forEach(k=>{
+    const el = document.getElementById('c-'+k);
+    if(el && c[k]) el.value = c[k];
+  });
+})();
+
+// ─── Homepage ──────────────────────────────────────────────────────────
+let heroQuill, featuredQuill;
+function initHomepageEditors() {
+  if(!heroQuill) heroQuill = new Quill('#hero-editor', {theme:'snow', modules:{toolbar:[['bold','italic'],['link'],['clean']]}});
+  if(!featuredQuill) featuredQuill = new Quill('#featured-editor', {theme:'snow', modules:{toolbar:[['bold','italic'],['link'],['clean']]}});
+  const h = JSON.parse(localStorage.getItem('sv_homepage')||'{}');
+  heroQuill.root.innerHTML = h.hero || '';
+  featuredQuill.root.innerHTML = h.featured || '';
+  if(h.ftitle) document.getElementById('h-featured-title').value = h.ftitle;
+}
+document.querySelector('[onclick="showPanel(\'homepage\')"]').addEventListener('click',()=>setTimeout(initHomepageEditors,50));
+function saveHomepage() {
+  const data = {
+    hero: heroQuill ? heroQuill.root.innerHTML : '',
+    ftitle: document.getElementById('h-featured-title').value,
+    featured: featuredQuill ? featuredQuill.root.innerHTML : ''
+  };
+  localStorage.setItem('sv_homepage', JSON.stringify(data));
+  showToast('Homepage content saved!');
+}
+
+// ─── Toast ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('save-toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────
+updateDashboard();
+</script>
+</body>
+</html>

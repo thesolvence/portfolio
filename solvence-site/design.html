@@ -1,0 +1,164 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Design & Visualization — Solvēnce</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+  <style>
+    .tools-grid { display: flex; flex-wrap: wrap; gap: 1em; margin: 1.5em 0; }
+    .tool-badge {
+      background: #1a1a2e; color: #c9a84c;
+      border: 1px solid #c9a84c;
+      padding: 6px 16px; border-radius: 3px;
+      font-size: 0.8em; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .project-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1.5em; margin: 2em 0; }
+    .project-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .project-card img { width: 100%; height: 200px; object-fit: cover; }
+    .project-card .card-body { padding: 1em; }
+    .project-card h4 { margin: 0 0 0.4em; color: #c9a84c; }
+    .project-card p { font-size: 0.85em; margin: 0; }
+    .workflow-steps { counter-reset: step; }
+    .workflow-step { display: flex; align-items: flex-start; gap: 1em; margin-bottom: 1.2em; }
+    .step-num { background: #c9a84c; color: #111; font-weight: 900; font-size: 1.1em;
+      width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; }
+  </style>
+</head>
+<body class="is-preload">
+<div id="wrapper">
+  <header id="header"><a href="index.html" class="logo">Solvēnce</a></header>
+  <nav id="nav">
+    <ul class="links">
+      <li><a href="index.html">Home</a></li>
+      <li class="active"><a href="design.html">Design</a></li>
+      <li><a href="construction.html">Construction</a></li>
+      <li><a href="permaculture.html">Permaculture</a></li>
+      <li><a href="music.html">Music</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+    <ul class="icons">
+      <li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+      <li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+      <li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+      <li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+    </ul>
+  </nav>
+
+  <div id="main">
+    <section class="post">
+      <header class="major">
+        <span class="date">Portfolio · Design &amp; Visualization</span>
+        <h1>Design &amp;<br />Visualization</h1>
+        <p>"Every line drawn is a declaration of intent.<br />Every space designed is a stage for human purpose."</p>
+      </header>
+
+      <div class="image main"><img src="images/IMG_20210826_145952_7_1629979230742.jpg" alt="Design Work" /></div>
+
+      <p>The design arm of Solvēnce blends architectural precision with artistic vision. Using an integrated toolkit spanning 3D modeling, quantity surveying, and Adobe's creative ecosystem, every project is taken from rough concept to presentation-ready visualization.</p>
+
+      <h3>Tools of the Trade</h3>
+      <div class="tools-grid">
+        <span class="tool-badge">SketchUp Pro</span>
+        <span class="tool-badge">Quantifier Pro</span>
+        <span class="tool-badge">Microsoft Excel</span>
+        <span class="tool-badge">Adobe Photoshop</span>
+        <span class="tool-badge">Adobe Illustrator</span>
+        <span class="tool-badge">Adobe InDesign</span>
+        <span class="tool-badge">Adobe Acrobat</span>
+      </div>
+
+      <hr />
+
+      <h3>The Design Workflow</h3>
+      <p>Every project follows a structured, repeatable process that ensures clarity at every stage:</p>
+      <div class="workflow-steps">
+        <div class="workflow-step">
+          <div class="step-num">1</div>
+          <div><strong>Brief &amp; Concept</strong> — Understanding the client's needs, site conditions, and vision. Sketching spatial relationships and functional zones.</div>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">2</div>
+          <div><strong>3D Modeling (SketchUp)</strong> — Building accurate 3D models of the space, exploring massing, form, and proportions before committing to detail.</div>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">3</div>
+          <div><strong>Quantification (Quantifier Pro)</strong> — Extracting material takeoffs, area calculations, and cost estimates directly from the 3D model.</div>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">4</div>
+          <div><strong>BOQ &amp; Costing (Excel)</strong> — Structured Bills of Quantities, budgeting spreadsheets, and financial summaries for client and contractor review.</div>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">5</div>
+          <div><strong>Presentation (Adobe Suite)</strong> — Photorealistic renders, branded presentation boards, and print-ready PDFs via Photoshop, Illustrator, and InDesign.</div>
+        </div>
+      </div>
+
+      <hr />
+
+      <h3>Project Gallery</h3>
+      <p><em>Upload your project images via the <a href="admin.html">Admin Page</a> — they will appear here automatically.</em></p>
+      <div class="project-gallery" id="design-gallery">
+        <!-- Projects are managed via admin.html -->
+        <div class="project-card">
+          <img src="images/IMG_20210826_145952_7_1629979230742.jpg" alt="Project 1" />
+          <div class="card-body">
+            <h4>Project Title Here</h4>
+            <p>Brief description of the project — location, scope, tools used, and outcome.</p>
+          </div>
+        </div>
+        <div class="project-card">
+          <img src="images/pic01.jpg" alt="Project 2" />
+          <div class="card-body">
+            <h4>Project Title Here</h4>
+            <p>Brief description of the project — location, scope, tools used, and outcome.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer id="footer">
+    <section class="split contact">
+      <section class="alt">
+        <h3>Based In</h3>
+        <p>Kisii, Kenya</p>
+      </section>
+      <section>
+        <h3>Phone</h3>
+        <p><a href="tel:+254727852261">(+254) 727 852261</a></p>
+      </section>
+      <section>
+        <h3>Email</h3>
+        <p><a href="mailto:info@solvence.com">info@solvence.com</a></p>
+      </section>
+      <section>
+        <h3>Social</h3>
+        <ul class="icons alt">
+          <li><a href="#" class="icon brands alt fa-twitter"><span class="label">Twitter</span></a></li>
+          <li><a href="#" class="icon brands alt fa-facebook-f"><span class="label">Facebook</span></a></li>
+          <li><a href="#" class="icon brands alt fa-instagram"><span class="label">Instagram</span></a></li>
+          <li><a href="#" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+        </ul>
+      </section>
+    </section>
+  </footer>
+
+  <div id="copyright">
+    <ul><li>&copy; Solvēnce by Makworo</li><li>McQworow Brand</li></ul>
+  </div>
+</div>
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.scrollex.min.js"></script>
+<script src="assets/js/jquery.scrolly.min.js"></script>
+<script src="assets/js/browser.min.js"></script>
+<script src="assets/js/breakpoints.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Music & Harmony — Solvēnce</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+  <style>
+    .tools-grid{display:flex;flex-wrap:wrap;gap:1em;margin:1.5em 0}
+    .tool-badge{background:#1a1a2e;color:#c9a84c;border:1px solid #c9a84c;
+      padding:6px 16px;border-radius:3px;font-size:0.8em;font-weight:700;
+      letter-spacing:0.1em;text-transform:uppercase}
+    .music-offerings{display:grid;grid-template-columns:1fr 1fr;gap:1.2em;margin:1.5em 0}
+    @media(max-width:600px){.music-offerings{grid-template-columns:1fr}}
+    .offering-box{border:1px solid rgba(201,168,76,0.3);padding:1.2em;border-radius:4px}
+    .offering-box h4{color:#c9a84c;margin:0 0 0.5em}
+    .offering-box p{font-size:0.85em;margin:0}
+    .audio-sample{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+      border-radius:4px;padding:1.2em;margin-bottom:1em}
+    .audio-sample h4{margin:0 0 0.5em;color:#c9a84c}
+    .audio-sample p{font-size:0.8em;margin:0 0 0.8em;color:rgba(255,255,255,0.6)}
+    .audio-sample audio{width:100%}
+    .sheet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1em;margin:1.5em 0}
+    .sheet-card{border:1px solid rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;text-align:center}
+    .sheet-card img{width:100%;height:160px;object-fit:cover}
+    .sheet-card .card-body{padding:0.8em}
+    .sheet-card h4{margin:0 0 0.3em;color:#c9a84c;font-size:0.9em}
+    .sheet-card a{font-size:0.8em}
+  </style>
+</head>
+<body class="is-preload">
+<div id="wrapper">
+  <header id="header"><a href="index.html" class="logo">Solvēnce</a></header>
+  <nav id="nav">
+    <ul class="links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="design.html">Design</a></li>
+      <li><a href="construction.html">Construction</a></li>
+      <li><a href="permaculture.html">Permaculture</a></li>
+      <li class="active"><a href="music.html">Music</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+    <ul class="icons">
+      <li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+      <li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+      <li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+      <li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+    </ul>
+  </nav>
+
+  <div id="main">
+    <section class="post">
+      <header class="major">
+        <span class="date">Portfolio · Music &amp; Harmony</span>
+        <h1>Music &amp;<br />Harmony</h1>
+        <p>"Music is not entertainment — it is medicine.<br />Harmony is not a luxury — it is alignment."</p>
+      </header>
+
+      <div class="image main"><img src="images/Art_Harmony.jpg" alt="Music and Harmony" /></div>
+
+      <p>Music at Solvēnce is both art and education. Using professional notation and audio production tools, Makworo creates sheet music, arrangements, and training materials that build musicianship — particularly in choral, worship, and ensemble settings. The goal is to make good music accessible, teachable, and deeply meaningful.</p>
+
+      <h3>Production Tools</h3>
+      <div class="tools-grid">
+        <span class="tool-badge">Sibelius</span>
+        <span class="tool-badge">Adobe Audition</span>
+        <span class="tool-badge">Music Notation</span>
+        <span class="tool-badge">Choral Arrangement</span>
+        <span class="tool-badge">Audio Editing</span>
+        <span class="tool-badge">Music Training Materials</span>
+      </div>
+
+      <hr />
+
+      <h3>What Solvēnce Offers in Music</h3>
+      <div class="music-offerings">
+        <div class="offering-box">
+          <h4>🎼 Sheet Music &amp; Notation</h4>
+          <p>Original arrangements and compositions created in Sibelius — SATB choral parts, solo pieces, and training exercises in PDF and MIDI formats.</p>
+        </div>
+        <div class="offering-box">
+          <h4>🎙 Audio Production</h4>
+          <p>Clean, professional audio recordings and reference tracks produced in Adobe Audition — ideal for choir rehearsal, personal study, and music training.</p>
+        </div>
+        <div class="offering-box">
+          <h4>📚 Music Education Materials</h4>
+          <p>Structured music training content — sight-reading exercises, ear training, and theory handouts tailored for community and school music programs.</p>
+        </div>
+        <div class="offering-box">
+          <h4>🎹 Arrangements on Request</h4>
+          <p>Custom arrangements of hymns, folk songs, and original compositions for choirs, small ensembles, and educational institutions.</p>
+        </div>
+      </div>
+
+      <hr />
+
+      <h3>Audio Samples</h3>
+      <p><em>Upload your audio files via the <a href="admin.html">Admin Page</a> and they will appear here as playable samples.</em></p>
+
+      <div class="audio-sample">
+        <h4>Sample Track Title</h4>
+        <p>SATB Arrangement · Sibelius + Adobe Audition · Year</p>
+        <!-- Replace src with your actual audio file path -->
+        <audio controls>
+          <source src="audio/sample1.mp3" type="audio/mpeg">
+          Your browser does not support audio playback.
+        </audio>
+      </div>
+
+      <div class="audio-sample">
+        <h4>Sample Track Title</h4>
+        <p>Choral Training Track · Adobe Audition · Year</p>
+        <audio controls>
+          <source src="audio/sample2.mp3" type="audio/mpeg">
+          Your browser does not support audio playback.
+        </audio>
+      </div>
+
+      <hr />
+
+      <h3>Sheet Music Gallery</h3>
+      <p><em>Add your sheet music previews below via the Admin Page.</em></p>
+      <div class="sheet-grid" id="sheet-gallery">
+        <div class="sheet-card">
+          <img src="images/pic01.jpg" alt="Sheet Music Preview" />
+          <div class="card-body">
+            <h4>Composition Title</h4>
+            <a href="#">Download PDF</a>
+          </div>
+        </div>
+        <div class="sheet-card">
+          <img src="images/pic01.jpg" alt="Sheet Music Preview" />
+          <div class="card-body">
+            <h4>Composition Title</h4>
+            <a href="#">Download PDF</a>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer id="footer">
+    <section class="split contact">
+      <section class="alt"><h3>Based In</h3><p>Kisii, Kenya</p></section>
+      <section><h3>Phone</h3><p><a href="tel:+254727852261">(+254) 727 852261</a></p></section>
+      <section><h3>Email</h3><p><a href="mailto:info@solvence.com">info@solvence.com</a></p></section>
+      <section>
+        <h3>Social</h3>
+        <ul class="icons alt">
+          <li><a href="#" class="icon brands alt fa-twitter"><span class="label">Twitter</span></a></li>
+          <li><a href="#" class="icon brands alt fa-facebook-f"><span class="label">Facebook</span></a></li>
+          <li><a href="#" class="icon brands alt fa-instagram"><span class="label">Instagram</span></a></li>
+          <li><a href="#" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+        </ul>
+      </section>
+    </section>
+  </footer>
+  <div id="copyright"><ul><li>&copy; Solvēnce by Makworo</li><li>McQworow Brand</li></ul></div>
+</div>
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.scrollex.min.js"></script>
+<script src="assets/js/jquery.scrolly.min.js"></script>
+<script src="assets/js/browser.min.js"></script>
+<script src="assets/js/breakpoints.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

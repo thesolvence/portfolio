@@ -1,0 +1,607 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Story Editor — Solvēnce</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg: #0d0d14; --surface: #16162a; --surface2: #1e1e35;
+      --border: rgba(201,168,76,0.2); --gold: #c9a84c; --gold-light: #e8d5a3;
+      --text: #e0e0e8; --text-dim: rgba(224,224,232,0.55);
+      --green: #7ec86e; --red: #e05c5c; --radius: 6px;
+      --font: 'Georgia', serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); margin: 0; padding: 0; min-height: 100vh; }
+    .topbar { background: var(--surface); border-bottom: 2px solid var(--gold); padding: 12px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar .brand { font-size: 1.2em; font-weight: bold; color: var(--gold); letter-spacing: 0.1em; }
+    .topbar .brand span { color: var(--text-dim); font-size: 0.65em; display: block; letter-spacing: 0.05em; font-weight: normal; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .editor-layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 58px); }
+    @media(max-width:900px) { .editor-layout { grid-template-columns: 1fr; } }
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 20px; overflow-y: auto; }
+    .sidebar h3 { font-size: 0.65em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .sidebar h3:not(:first-child) { margin-top: 24px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 0.75em; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+    .field input[type=text], .field input[type=date], .field select, .field textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: var(--radius); font-size: 0.9em; font-family: var(--font); outline: none; transition: border-color 0.2s; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
+    .field textarea { min-height: 70px; resize: vertical; }
+    .field select option { background: var(--surface2); }
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .cat-check { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 0.85em; color: var(--text-dim); padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); transition: all 0.18s; }
+    .cat-check:hover { border-color: var(--gold); color: var(--text); }
+    .cat-check input { accent-color: var(--gold); width: 14px; height: 14px; }
+    .cat-check.checked { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+    .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 16px; text-align: center; cursor: pointer; transition: border-color 0.2s; background: var(--surface2); margin-bottom: 10px; }
+    .upload-zone:hover { border-color: var(--gold); }
+    .upload-zone input { display: none; }
+    .upload-zone .icon { font-size: 1.8em; margin-bottom: 4px; }
+    .upload-zone p { margin: 0; color: var(--text-dim); font-size: 0.8em; }
+    .cover-preview { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); display: none; margin-bottom: 8px; }
+    .url-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: var(--radius); font-size: 0.82em; font-family: var(--font); outline: none; }
+    .url-input:focus { border-color: var(--gold); }
+    .url-label { font-size: 0.72em; color: var(--text-dim); margin-bottom: 4px; display: block; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: var(--radius); font-size: 0.82em; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; font-family: var(--font); }
+    .btn-gold { background: var(--gold); color: #111; }
+    .btn-gold:hover { background: var(--gold-light); }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-green { background: var(--green); color: #111; }
+    .btn-green:hover { filter: brightness(1.1); }
+    .btn-blue { background: #4a6fa5; color: #fff; }
+    .btn-blue:hover { background: #5a82c0; }
+    .btn-sm { padding: 6px 12px; font-size: 0.75em; }
+    .btn-full { width: 100%; justify-content: center; margin-bottom: 8px; }
+    .editor-main { display: flex; flex-direction: column; overflow: hidden; }
+    .editor-header { padding: 20px 28px 0; }
+    .post-title-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--gold-light); font-size: 1.8em; font-family: var(--font); padding: 8px 0 12px; outline: none; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.02em; }
+    .post-title-input::placeholder { color: rgba(201,168,76,0.3); }
+    .post-subtitle-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-dim); font-size: 1em; font-family: var(--font); padding: 6px 0 10px; outline: none; margin-bottom: 16px; font-style: italic; }
+    .post-subtitle-input::placeholder { color: rgba(224,224,232,0.2); }
+    .ql-toolbar.ql-snow { background: var(--surface2); border: none; border-bottom: 1px solid var(--border); padding: 8px 28px; position: sticky; top: 58px; z-index: 50; }
+    .ql-container.ql-snow { background: transparent; border: none; flex: 1; font-family: var(--font); font-size: 1em; color: var(--text); }
+    .ql-editor { padding: 20px 28px 60px; min-height: 500px; font-family: var(--font); font-size: 1.05em; line-height: 1.85; color: var(--text); }
+    .ql-editor p { margin-bottom: 1em; }
+    .ql-editor h1, .ql-editor h2, .ql-editor h3 { color: var(--gold-light); margin: 1.4em 0 0.5em; }
+    .ql-editor blockquote { border-left: 3px solid var(--gold); padding-left: 1em; color: var(--text-dim); font-style: italic; margin: 1.2em 0; }
+    .ql-editor img { max-width: 100%; border-radius: 4px; margin: 1em 0; }
+    .ql-editor a { color: var(--gold); }
+    .ql-snow .ql-stroke { stroke: var(--text-dim); }
+    .ql-snow .ql-fill { fill: var(--text-dim); }
+    .ql-snow .ql-picker { color: var(--text-dim); }
+    .ql-snow .ql-picker-options { background: var(--surface2); border-color: var(--border); }
+    .ql-snow.ql-toolbar button:hover .ql-stroke, .ql-snow .ql-toolbar button:hover .ql-stroke { stroke: var(--gold); }
+    .preview-panel { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 300; overflow-y: auto; padding: 40px 20px; }
+    .preview-panel.open { display: block; }
+    .preview-close { position: fixed; top: 16px; right: 24px; background: var(--gold); color: #111; border: none; padding: 8px 18px; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 0.85em; z-index: 301; }
+    .preview-inner { max-width: 780px; margin: 0 auto; }
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 400; align-items: center; justify-content: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 28px; width: 92%; max-width: 640px; max-height: 90vh; overflow-y: auto; }
+    .modal-box h2 { color: var(--gold-light); margin: 0 0 6px; font-size: 1.2em; }
+    .modal-box p { color: var(--text-dim); font-size: 0.88em; margin-bottom: 18px; }
+    .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .code-preview { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-family: monospace; font-size: 0.75em; color: var(--text-dim); max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin-bottom: 6px; }
+    .filename-field { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--gold-light); padding: 9px 12px; border-radius: var(--radius); font-size: 0.9em; outline: none; font-family: var(--font); margin-bottom: 14px; }
+    .filename-field:focus { border-color: var(--gold); }
+    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--green); color: #111; padding: 11px 20px; border-radius: var(--radius); font-weight: 700; font-size: 0.85em; opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 9999; pointer-events: none; }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    .notice { background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.25); border-radius: var(--radius); padding: 10px 14px; font-size: 0.82em; color: var(--gold-light); margin-bottom: 16px; line-height: 1.5; }
+    .notice-blue { background: rgba(74,111,165,0.12); border: 1px solid rgba(74,111,165,0.35); border-radius: var(--radius); padding: 10px 14px; font-size: 0.82em; color: #8ab4e8; margin-bottom: 16px; line-height: 1.5; }
+    .img-insert-bar { display: flex; gap: 8px; align-items: center; padding: 6px 28px 0; flex-wrap: wrap; }
+    .img-insert-bar span { font-size: 0.78em; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+    .img-url-field { flex: 1; min-width: 160px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: var(--radius); font-size: 0.82em; font-family: var(--font); outline: none; }
+    .img-url-field:focus { border-color: var(--gold); }
+    /* Load file drop zone */
+    .load-zone { border: 2px dashed rgba(74,111,165,0.5); border-radius: var(--radius); padding: 14px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(74,111,165,0.06); margin-bottom: 10px; }
+    .load-zone:hover, .load-zone.dragover { border-color: #4a6fa5; background: rgba(74,111,165,0.14); }
+    .load-zone input { display: none; }
+    .load-zone .icon { font-size: 1.6em; margin-bottom: 4px; }
+    .load-zone p { margin: 0; color: #8ab4e8; font-size: 0.8em; }
+    .loaded-badge { background: rgba(74,111,165,0.15); border: 1px solid rgba(74,111,165,0.4); border-radius: var(--radius); padding: 8px 12px; font-size: 0.8em; color: #8ab4e8; display: none; margin-bottom: 8px; word-break: break-all; }
+    .loaded-badge.show { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Solvēnce <span>Story Editor</span></div>
+  <div class="topbar-actions">
+    <button class="btn btn-blue btn-sm" onclick="document.getElementById('load-file-top').click()">📂 Load Existing Post</button>
+    <input type="file" id="load-file-top" accept=".html" style="display:none" onchange="loadExistingFile(this)" />
+    <button class="btn btn-outline btn-sm" onclick="openPreview()">👁 Preview</button>
+    <button class="btn btn-green btn-sm" onclick="openGenerateModal()">⬇ Generate HTML</button>
+  </div>
+</div>
+
+<div class="editor-layout">
+  <aside class="sidebar">
+
+    <!-- LOAD EXISTING POST -->
+    <h3>Load &amp; Edit Existing Post</h3>
+    <div class="notice-blue">Drop any Solvēnce HTML post here to edit it — title, content, images and all.</div>
+    <div class="load-zone" id="load-zone" onclick="document.getElementById('load-file-sidebar').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+      <div class="icon">📂</div>
+      <p>Click or drag &amp; drop an HTML file here</p>
+      <input type="file" id="load-file-sidebar" accept=".html" onchange="loadExistingFile(this)" />
+    </div>
+    <div class="loaded-badge" id="loaded-badge">📄 Loaded: <span id="loaded-filename"></span></div>
+
+    <h3>Post Settings</h3>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="post-date" />
+    </div>
+    <div class="field">
+      <label>Author</label>
+      <input type="text" id="post-author" value="Makworo" placeholder="Makworo" />
+    </div>
+    <div class="field">
+      <label>Excerpt <small style="color:var(--text-dim);text-transform:none;letter-spacing:0">(shown on cards &amp; homepage)</small></label>
+      <textarea id="post-excerpt" placeholder="A short summary visitors will see before clicking Read More..."></textarea>
+    </div>
+
+    <h3>Categories</h3>
+    <div class="notice">Choose where this post appears on your site.</div>
+    <div class="cat-grid" id="cat-grid">
+      <label class="cat-check" id="cat-design"><input type="checkbox" value="design" onchange="toggleCat(this)"> Design</label>
+      <label class="cat-check" id="cat-construction"><input type="checkbox" value="construction" onchange="toggleCat(this)"> Construction</label>
+      <label class="cat-check" id="cat-permaculture"><input type="checkbox" value="permaculture" onchange="toggleCat(this)"> Permaculture</label>
+      <label class="cat-check" id="cat-music"><input type="checkbox" value="music" onchange="toggleCat(this)"> Music</label>
+      <label class="cat-check" id="cat-journal" style="grid-column:1/-1"><input type="checkbox" value="journal" onchange="toggleCat(this)"> General / Journal</label>
+    </div>
+
+    <h3 style="margin-top:24px">Cover Image</h3>
+    <img id="cover-preview" class="cover-preview" alt="Cover" />
+    <div class="upload-zone" onclick="document.getElementById('cover-file').click()">
+      <div class="icon">🖼</div>
+      <p>Upload from computer</p>
+      <input type="file" id="cover-file" accept="image/*" onchange="handleCoverUpload(this)" />
+    </div>
+    <span class="url-label">Or paste image URL / path:</span>
+    <input type="text" class="url-input" id="cover-url" placeholder="images/mycover.jpg" oninput="setCoverFromUrl(this.value)" />
+
+    <h3 style="margin-top:24px">Actions</h3>
+    <button class="btn btn-outline btn-full" onclick="clearAll()">🗑 Clear &amp; Start Fresh</button>
+    <button class="btn btn-outline btn-full" onclick="saveDraft()">💾 Save Draft</button>
+    <button class="btn btn-gold btn-full" onclick="openGenerateModal()">⬇ Generate HTML File</button>
+  </aside>
+
+  <div class="editor-main">
+    <div class="editor-header">
+      <input type="text" class="post-title-input" id="post-title" placeholder="Your story title goes here…" />
+      <input type="text" class="post-subtitle-input" id="post-subtitle" placeholder="A subtitle or tagline (optional)" />
+    </div>
+    <div class="img-insert-bar">
+      <span>Insert image:</span>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('inline-img-file').click()">📷 Upload</button>
+      <input type="file" id="inline-img-file" accept="image/*" style="display:none" onchange="insertImageFromFile(this)" />
+      <input type="text" class="img-url-field" id="inline-img-url" placeholder="Or paste image URL and press Enter" onkeydown="if(event.key==='Enter')insertImageFromUrl()" />
+      <button class="btn btn-outline btn-sm" onclick="insertImageFromUrl()">Insert</button>
+    </div>
+    <div id="editor"></div>
+  </div>
+</div>
+
+<!-- Preview -->
+<div class="preview-panel" id="preview-panel">
+  <button class="preview-close" onclick="closePreview()">✕ Close Preview</button>
+  <div class="preview-inner" id="preview-inner"></div>
+</div>
+
+<!-- Generate modal -->
+<div class="modal-backdrop" id="generate-modal">
+  <div class="modal-box">
+    <h2>⬇ Generate &amp; Export</h2>
+    <p>Your story will be exported as a complete Solvēnce HTML page. Drop it into your repo folder and push to publish it live.</p>
+    <div class="field">
+      <label>File Name — use the SAME filename to overwrite an existing post</label>
+      <input type="text" class="filename-field" id="output-filename" placeholder="my-story.html" />
+    </div>
+    <div class="notice" id="card-notice"></div>
+    <p style="color:var(--text-dim);font-size:0.82em;margin-top:-8px">Preview of generated HTML:</p>
+    <div class="code-preview" id="code-preview-box"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="downloadHTML()">⬇ Download File</button>
+      <button class="btn btn-gold" onclick="copyHTML()">📋 Copy HTML</button>
+      <button class="btn btn-outline" onclick="closeGenerateModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+<script>
+// ── Init ──────────────────────────────────────────────────────────────────
+const quill = new Quill('#editor', {
+  theme: 'snow',
+  placeholder: 'Write your story here… Tell us what happened, what you built, what you learned. Add images, quotes, and headings to bring it to life.',
+  modules: {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link'],
+      ['clean']
+    ]
+  }
+});
+
+document.getElementById('post-date').value = new Date().toISOString().split('T')[0];
+let coverDataUrl = '', coverPath = '', loadedFilename = '';
+
+// ── Load existing HTML post ───────────────────────────────────────────────
+function loadExistingFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  loadedFilename = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    parseAndLoadHTML(e.target.result, file.name);
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function parseAndLoadHTML(html, filename) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  // Title — from <h1> inside header.major
+  const h1 = doc.querySelector('header.major h1');
+  if (h1) document.getElementById('post-title').value = h1.textContent.trim();
+
+  // Subtitle — from <p> inside header.major
+  const headerP = doc.querySelector('header.major > p');
+  if (headerP) document.getElementById('post-subtitle').value = headerP.textContent.trim();
+
+  // Date — from .date span
+  const dateSpan = doc.querySelector('span.date');
+  if (dateSpan) {
+    const txt = dateSpan.textContent;
+    const parts = txt.split('·');
+    const datePart = parts[0].trim();
+    const parsed = new Date(datePart);
+    if (!isNaN(parsed)) {
+      document.getElementById('post-date').value = parsed.toISOString().split('T')[0];
+    }
+    if (parts[1]) document.getElementById('post-author').value = parts[1].trim();
+  }
+
+  // Excerpt — from og:description meta
+  const ogDesc = doc.querySelector('meta[property="og:description"]');
+  if (ogDesc) document.getElementById('post-excerpt').value = ogDesc.getAttribute('content') || '';
+
+  // Cover image — from .image.main img
+  const coverImg = doc.querySelector('.image.main img');
+  if (coverImg) {
+    coverPath = coverImg.getAttribute('src') || '';
+    document.getElementById('cover-url').value = coverPath;
+    showCoverPreview(coverPath);
+  }
+
+  // Categories — from .category-tag links
+  const catLinks = doc.querySelectorAll('.category-tag');
+  document.querySelectorAll('#cat-grid input').forEach(cb => { cb.checked = false; toggleCat(cb); });
+  catLinks.forEach(link => {
+    const href = link.getAttribute('href') || '';
+    const val = href.replace('.html','');
+    const cb = document.querySelector(`#cat-${val} input`);
+    if (cb) { cb.checked = true; toggleCat(cb); }
+    if (href === 'index.html') {
+      const jcb = document.querySelector('#cat-journal input');
+      if (jcb) { jcb.checked = true; toggleCat(jcb); }
+    }
+  });
+
+  // Body content — from .post-content div
+  const postContent = doc.querySelector('.post-content');
+  if (postContent) {
+    quill.root.innerHTML = postContent.innerHTML;
+  }
+
+  // Set filename for output
+  document.getElementById('output-filename') && (document.getElementById('output-filename').value = filename);
+
+  // Show loaded badge
+  document.getElementById('loaded-filename').textContent = filename;
+  document.getElementById('loaded-badge').classList.add('show');
+  document.getElementById('load-zone').style.borderColor = 'var(--green)';
+
+  showToast('✓ Post loaded — ready to edit!');
+}
+
+// ── Drag & drop support ───────────────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('load-zone').classList.add('dragover');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('load-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.html')) {
+    loadedFilename = file.name;
+    const reader = new FileReader();
+    reader.onload = ev => parseAndLoadHTML(ev.target.result, file.name);
+    reader.readAsText(file);
+  } else {
+    showToast('Please drop an HTML file.');
+  }
+}
+
+// ── Category toggle ───────────────────────────────────────────────────────
+function toggleCat(cb) {
+  document.getElementById('cat-' + cb.value).classList.toggle('checked', cb.checked);
+}
+function getCategories() {
+  return Array.from(document.querySelectorAll('#cat-grid input:checked')).map(cb => cb.value);
+}
+function getCategoryLabel(val) {
+  return { design:'Design', construction:'Construction', permaculture:'Permaculture', music:'Music', journal:'Journal' }[val] || val;
+}
+
+// ── Cover image ───────────────────────────────────────────────────────────
+function handleCoverUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  coverPath = 'images/' + file.name;
+  document.getElementById('cover-url').value = coverPath;
+  const reader = new FileReader();
+  reader.onload = e => { coverDataUrl = e.target.result; showCoverPreview(coverDataUrl); };
+  reader.readAsDataURL(file);
+}
+function setCoverFromUrl(val) { coverPath = val; coverDataUrl = ''; showCoverPreview(val); }
+function showCoverPreview(src) {
+  const img = document.getElementById('cover-preview');
+  img.src = src; img.style.display = src ? 'block' : 'none';
+}
+
+// ── Inline image insert ───────────────────────────────────────────────────
+function insertImageFromFile(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const range = quill.getSelection(true);
+    quill.insertEmbed(range.index, 'image', e.target.result);
+    quill.setSelection(range.index + 1);
+    showToast('Image inserted!');
+  };
+  reader.readAsDataURL(file); input.value = '';
+}
+function insertImageFromUrl() {
+  const url = document.getElementById('inline-img-url').value.trim();
+  if (!url) return;
+  const range = quill.getSelection(true);
+  quill.insertEmbed(range.index, 'image', url);
+  quill.setSelection(range.index + 1);
+  document.getElementById('inline-img-url').value = '';
+  showToast('Image inserted!');
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────
+function openPreview() {
+  const title = document.getElementById('post-title').value || 'Untitled';
+  const subtitle = document.getElementById('post-subtitle').value;
+  const author = document.getElementById('post-author').value || 'Makworo';
+  const dateVal = document.getElementById('post-date').value;
+  const cover = coverDataUrl || coverPath || '';
+  const cats = getCategories();
+  const body = quill.root.innerHTML;
+  const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+  document.getElementById('preview-inner').innerHTML = `
+    <div style="font-family:Georgia,serif;color:#e0e0e8;max-width:760px;margin:0 auto">
+      ${cats.length ? `<p style="color:#c9a84c;font-size:0.75em;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">${cats.map(getCategoryLabel).join(' · ')}</p>` : ''}
+      <h1 style="font-size:2.2em;color:#e8d5a3;line-height:1.2;margin:0 0 8px">${title}</h1>
+      ${subtitle ? `<p style="color:rgba(224,224,232,0.6);font-style:italic;font-size:1.1em;margin:0 0 16px">${subtitle}</p>` : ''}
+      <p style="color:rgba(224,224,232,0.45);font-size:0.82em;letter-spacing:0.06em;margin-bottom:24px">${dateStr}${dateStr&&author?' · ':''}${author}</p>
+      ${cover ? `<img src="${cover}" style="width:100%;max-height:420px;object-fit:cover;border-radius:6px;margin-bottom:28px" />` : ''}
+      <div style="line-height:1.85;font-size:1.05em">${body}</div>
+    </div>`;
+  document.getElementById('preview-panel').classList.add('open');
+}
+function closePreview() { document.getElementById('preview-panel').classList.remove('open'); }
+
+// ── Build HTML ────────────────────────────────────────────────────────────
+function buildHTML() {
+  const title = document.getElementById('post-title').value || 'Untitled';
+  const subtitle = document.getElementById('post-subtitle').value;
+  const author = document.getElementById('post-author').value || 'Makworo';
+  const dateVal = document.getElementById('post-date').value;
+  const excerpt = document.getElementById('post-excerpt').value;
+  const cover = coverPath || '';
+  const cats = getCategories();
+  const body = quill.root.innerHTML;
+  const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+  const cleanBody = body.replace(/src="data:image[^"]+"/g,'src="images/your-image.jpg"');
+  return `<!DOCTYPE HTML>
+<html>
+<head>
+  <title>${title} — Solvēnce</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="description" content="${excerpt.replace(/"/g,'&quot;')}" />
+  <meta property="og:title" content="${title} — Solvēnce" />
+  <meta property="og:description" content="${excerpt.replace(/"/g,'&quot;')}" />
+  ${cover ? `<meta property="og:image" content="${cover}" />` : ''}
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+  <style>
+    .post-content img { max-width:100%;height:auto;border-radius:4px;margin:1.2em 0; }
+    .post-content blockquote { border-left:3px solid #c9a84c;padding-left:1.2em;font-style:italic;color:rgba(255,255,255,0.6);margin:1.5em 0; }
+    .post-content h1,.post-content h2,.post-content h3 { color:#e8d5a3;margin-top:1.6em; }
+    .category-tags { margin-bottom:1em; }
+    .category-tag { display:inline-block;background:#c9a84c;color:#111;font-size:0.65em;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:3px 10px;border-radius:2px;margin-right:6px;text-decoration:none; }
+    .category-tag:hover { background:#e8d5a3; }
+    .post-meta { color:rgba(255,255,255,0.4);font-size:0.82em;letter-spacing:0.06em;margin-bottom:1.8em; }
+  </style>
+</head>
+<body class="is-preload">
+<div id="wrapper">
+  <header id="header"><a href="index.html" class="logo">Solvēnce</a></header>
+  <nav id="nav">
+    <ul class="links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="design.html">Design</a></li>
+      <li><a href="construction.html">Construction</a></li>
+      <li><a href="permaculture.html">Permaculture</a></li>
+      <li><a href="music.html">Music</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+    <ul class="icons">
+      <li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+      <li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+      <li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+      <li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+    </ul>
+  </nav>
+  <div id="main">
+    <section class="post">
+      <header class="major">
+        <div class="category-tags">
+          ${cats.map(c=>`<a href="${c==='journal'?'index.html':c+'.html'}" class="category-tag">${getCategoryLabel(c)}</a>`).join('')}
+        </div>
+        <span class="date">${dateStr}${dateStr&&author?' · ':''}${author}</span>
+        <h1>${title}</h1>
+        ${subtitle?`<p>${subtitle}</p>`:''}
+      </header>
+      ${cover?`<div class="image main"><img src="${cover}" alt="${title}" /></div>`:''}
+      <div class="post-content">
+        ${cleanBody}
+      </div>
+      <hr />
+      <ul class="actions special">
+        <li><a href="index.html" class="button">← Back to Home</a></li>
+        ${cats.filter(c=>c!=='journal').map(c=>`<li><a href="${c}.html" class="button">${getCategoryLabel(c)} Portfolio</a></li>`).join('')}
+      </ul>
+    </section>
+  </div>
+  <footer id="footer">
+    <section class="split contact">
+      <section class="alt"><h3>Based In</h3><p>Kisii, Kenya</p></section>
+      <section><h3>Phone</h3><p><a href="tel:+254727852261">(+254) 727 852261</a></p></section>
+      <section><h3>Email</h3><p><a href="mailto:info@solvence.com">info@solvence.com</a></p></section>
+      <section>
+        <h3>Social</h3>
+        <ul class="icons alt">
+          <li><a href="#" class="icon brands alt fa-twitter"><span class="label">Twitter</span></a></li>
+          <li><a href="#" class="icon brands alt fa-facebook-f"><span class="label">Facebook</span></a></li>
+          <li><a href="#" class="icon brands alt fa-instagram"><span class="label">Instagram</span></a></li>
+          <li><a href="#" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+        </ul>
+      </section>
+    </section>
+  </footer>
+  <div id="copyright">
+    <ul>
+      <li>&copy; Solvēnce by Makworo</li>
+      <li><a href="story-editor.html" style="color:#c9a84c;text-decoration:none;" title="Open Story Editor">McQworow Brand</a> · All Rights Reserved</li>
+    </ul>
+  </div>
+</div>
+<script src="assets/js/jquery.min.js"><\/script>
+<script src="assets/js/jquery.scrollex.min.js"><\/script>
+<script src="assets/js/jquery.scrolly.min.js"><\/script>
+<script src="assets/js/browser.min.js"><\/script>
+<script src="assets/js/breakpoints.min.js"><\/script>
+<script src="assets/js/util.js"><\/script>
+<script src="assets/js/main.js"><\/script>
+</body>
+</html>`;
+}
+
+// ── Generate modal ────────────────────────────────────────────────────────
+function openGenerateModal() {
+  const title = document.getElementById('post-title').value || 'my-story';
+  const existingFilename = document.getElementById('output-filename') ? document.getElementById('output-filename').value : '';
+  const slug = loadedFilename || existingFilename || (title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') + '.html');
+  document.getElementById('output-filename').value = slug;
+  const cats = getCategories();
+  document.getElementById('card-notice').innerHTML = cats.length
+    ? `<strong>Categories:</strong> ${cats.map(getCategoryLabel).join(', ')}. ${loadedFilename ? '⚠ Overwriting existing post — use the same filename <code>'+loadedFilename+'</code> to replace it.' : 'Add a card linking to <code>'+slug+'</code> in each category page.'}`
+    : '<strong>Tip:</strong> Select at least one category so visitors can find this post.';
+  const html = buildHTML();
+  document.getElementById('code-preview-box').textContent = html.substring(0,600) + '\n\n… (full file on download)';
+  document.getElementById('generate-modal').classList.add('open');
+}
+function closeGenerateModal() { document.getElementById('generate-modal').classList.remove('open'); }
+
+function downloadHTML() {
+  const html = buildHTML();
+  const filename = document.getElementById('output-filename').value || 'story.html';
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  showToast('Downloaded: ' + filename);
+}
+function copyHTML() {
+  const html = buildHTML();
+  navigator.clipboard.writeText(html).then(()=>showToast('HTML copied!')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = html; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('HTML copied!');
+  });
+}
+
+// ── Draft save / load ─────────────────────────────────────────────────────
+function saveDraft() {
+  const draft = {
+    title: document.getElementById('post-title').value,
+    subtitle: document.getElementById('post-subtitle').value,
+    author: document.getElementById('post-author').value,
+    date: document.getElementById('post-date').value,
+    excerpt: document.getElementById('post-excerpt').value,
+    coverPath, cats: getCategories(),
+    body: quill.root.innerHTML,
+    loadedFilename,
+    saved: new Date().toISOString()
+  };
+  localStorage.setItem('sv_draft', JSON.stringify(draft));
+  showToast('Draft saved!');
+}
+(function loadDraft() {
+  const d = JSON.parse(localStorage.getItem('sv_draft') || 'null');
+  if (!d) return;
+  if (d.title) document.getElementById('post-title').value = d.title;
+  if (d.subtitle) document.getElementById('post-subtitle').value = d.subtitle;
+  if (d.author) document.getElementById('post-author').value = d.author;
+  if (d.date) document.getElementById('post-date').value = d.date;
+  if (d.excerpt) document.getElementById('post-excerpt').value = d.excerpt;
+  if (d.coverPath) { coverPath = d.coverPath; document.getElementById('cover-url').value = d.coverPath; showCoverPreview(d.coverPath); }
+  if (d.body) quill.root.innerHTML = d.body;
+  if (d.loadedFilename) { loadedFilename = d.loadedFilename; document.getElementById('loaded-filename').textContent = d.loadedFilename; document.getElementById('loaded-badge').classList.add('show'); }
+  if (d.cats) d.cats.forEach(c => { const cb = document.querySelector(`#cat-${c} input`); if(cb){cb.checked=true;toggleCat(cb);} });
+})();
+
+function clearAll() {
+  if (!confirm('Clear everything and start a new story?')) return;
+  ['post-title','post-subtitle','post-excerpt','cover-url'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('post-author').value = 'Makworo';
+  document.getElementById('post-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cover-preview').style.display = 'none';
+  document.getElementById('loaded-badge').classList.remove('show');
+  document.getElementById('load-zone').style.borderColor = '';
+  quill.setContents([]);
+  coverDataUrl = ''; coverPath = ''; loadedFilename = '';
+  document.querySelectorAll('#cat-grid input').forEach(cb=>{cb.checked=false;toggleCat(cb);});
+  localStorage.removeItem('sv_draft');
+  showToast('Ready for a new story!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+setInterval(saveDraft, 30000);
+</script>
+</body>
+</html>

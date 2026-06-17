@@ -103,6 +103,14 @@
     .load-zone p { margin: 0; color: #8ab4e8; font-size: 0.8em; }
     .loaded-badge { background: rgba(74,111,165,0.15); border: 1px solid rgba(74,111,165,0.4); border-radius: var(--radius); padding: 8px 12px; font-size: 0.8em; color: #8ab4e8; display: none; margin-bottom: 8px; word-break: break-all; }
     .loaded-badge.show { display: block; }
+    /* Gallery modal item rows */
+    .gallery-item-row { display: flex; gap: 10px; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; margin-bottom: 10px; }
+    .gallery-item-row img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #000; }
+    .gallery-item-row .gi-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .gallery-item-row input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 4px; font-size: 0.8em; font-family: var(--font); outline: none; }
+    .gallery-item-row input:focus { border-color: var(--gold); }
+    .gallery-item-row .gi-remove { background: var(--red); color: #fff; border: none; width: 26px; height: 26px; border-radius: 4px; cursor: pointer; flex-shrink: 0; font-size: 0.9em; }
+    .gallery-item-row .gi-upload-btn { background: var(--gold); color: #111; border: none; padding: 6px 10px; border-radius: 4px; font-size: 0.72em; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -181,6 +189,7 @@
       <input type="file" id="inline-img-file" accept="image/*" style="display:none" onchange="insertImageFromFile(this)" />
       <input type="text" class="img-url-field" id="inline-img-url" placeholder="Or paste image URL and press Enter" onkeydown="if(event.key==='Enter')insertImageFromUrl()" />
       <button class="btn btn-outline btn-sm" onclick="insertImageFromUrl()">Insert</button>
+      <button class="btn btn-blue btn-sm" onclick="openGalleryModal()">🖼 Insert Gallery</button>
     </div>
     <div id="editor"></div>
   </div>
@@ -208,6 +217,33 @@
       <button class="btn btn-green" onclick="downloadHTML()">⬇ Download File</button>
       <button class="btn btn-gold" onclick="copyHTML()">📋 Copy HTML</button>
       <button class="btn btn-outline" onclick="closeGenerateModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- GALLERY MODAL -->
+<div class="modal-backdrop" id="gallery-modal">
+  <div class="modal-box">
+    <h2>🖼 Insert Photo Gallery</h2>
+    <p>Add 2 or more images. They'll be inserted as a styled tiled gallery with shadow effects and a full-screen lightbox — just like Blocks of Change.</p>
+
+    <div id="gallery-items"></div>
+
+    <div class="modal-actions" style="margin-bottom:18px">
+      <button class="btn btn-outline" onclick="addGalleryItem()">+ Add Image</button>
+    </div>
+
+    <div class="field">
+      <label>Layout Style</label>
+      <select id="gallery-layout">
+        <option value="grid">Even Grid — all images same size</option>
+        <option value="featured">Featured — first image wide, rest in grid</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="insertGalleryBlock()">✓ Insert Gallery into Post</button>
+      <button class="btn btn-outline" onclick="closeGalleryModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -301,8 +337,29 @@ function parseAndLoadHTML(html, filename) {
 
   // Body content — from .post-content div
   const postContent = doc.querySelector('.post-content');
+  let bodyHTML = postContent ? postContent.innerHTML : '';
+
+  // Reconstruct any photo galleries back into editable markers
+  window.svGalleries = window.svGalleries || {};
+  const galleryDataMatch = html.match(/window\.svGalleries\s*=\s*(\{[\s\S]*?\});/);
+  if (galleryDataMatch) {
+    try {
+      const loadedGalleries = JSON.parse(galleryDataMatch[1]);
+      Object.assign(window.svGalleries, loadedGalleries);
+    } catch (e) { /* ignore parse errors */ }
+  }
+  // Replace each sv-photo-gallery div in the loaded body with its marker
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = bodyHTML;
+  tempDiv.querySelectorAll('.sv-photo-gallery').forEach(galDiv => {
+    const galleryId = galDiv.getAttribute('data-gallery-id');
+    const marker = document.createTextNode(`[[GALLERY:${galleryId}]]`);
+    galDiv.replaceWith(marker);
+  });
+  bodyHTML = tempDiv.innerHTML;
+
   if (postContent) {
-    quill.root.innerHTML = postContent.innerHTML;
+    quill.root.innerHTML = bodyHTML;
   }
 
   // Set filename for output
@@ -393,8 +450,23 @@ function openPreview() {
   const dateVal = document.getElementById('post-date').value;
   const cover = coverDataUrl || coverPath || '';
   const cats = getCategories();
-  const body = quill.root.innerHTML;
+  let body = quill.root.innerHTML;
   const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+
+  // Expand gallery markers for preview using simple inline-styled tiles (no lightbox needed in preview)
+  if (window.svGalleries) {
+    body = body.replace(/\[\[GALLERY:(gallery-\d+)\]\]/g, (match, galleryId) => {
+      const data = window.svGalleries[galleryId];
+      if (!data) return '';
+      const tiles = data.items.map((item, i) => `
+        <div style="border-radius:6px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,0.45);${data.layout==='featured'&&i===0?'grid-column:1/-1;':''}">
+          <img src="${item.src}" style="width:100%;height:${data.layout==='featured'&&i===0?'300':'200'}px;object-fit:cover;display:block;" />
+          ${item.caption ? `<p style="background:#1a1a2e;color:rgba(255,255,255,0.6);font-size:0.78em;font-style:italic;padding:8px 12px;margin:0;">${item.caption}</p>` : ''}
+        </div>`).join('');
+      return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1em;margin:1.5em 0;">${tiles}</div>`;
+    });
+  }
+
   document.getElementById('preview-inner').innerHTML = `
     <div style="font-family:Georgia,serif;color:#e0e0e8;max-width:760px;margin:0 auto">
       ${cats.length ? `<p style="color:#c9a84c;font-size:0.75em;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">${cats.map(getCategoryLabel).join(' · ')}</p>` : ''}
@@ -409,6 +481,94 @@ function openPreview() {
 function closePreview() { document.getElementById('preview-panel').classList.remove('open'); }
 
 // ── Build HTML ────────────────────────────────────────────────────────────
+function expandGalleryMarkers(html) {
+  if (!window.svGalleries) return { html, hasGallery: false };
+  let hasGallery = false;
+  const expanded = html.replace(/\[\[GALLERY:(gallery-\d+)\]\]/g, (match, galleryId) => {
+    const data = window.svGalleries[galleryId];
+    if (!data) return '';
+    hasGallery = true;
+    const items = data.items;
+    const figures = items.map((item, i) => {
+      const wideClass = (data.layout === 'featured' && i === 0) ? ' sv-gallery-wide' : '';
+      return `<figure class="sv-gallery-figure${wideClass}" onclick="svOpenLightbox('${galleryId}', ${i})">
+        <img src="${item.src}" alt="${item.caption || ''}" />
+        ${item.caption ? `<figcaption>${item.caption}</figcaption>` : ''}
+      </figure>`;
+    }).join('\n');
+    return `<div class="sv-photo-gallery" data-gallery-id="${galleryId}">${figures}</div>`;
+  });
+  return { html: expanded, hasGallery };
+}
+
+function buildGalleryDataScript() {
+  if (!window.svGalleries || Object.keys(window.svGalleries).length === 0) return '';
+  return '<scr' + 'ipt>window.svGalleries = ' + JSON.stringify(window.svGalleries) + ';</scr' + 'ipt>';
+}
+
+const SV_GALLERY_CSS = `
+    .sv-photo-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1.2em; margin:2em 0; }
+    .sv-gallery-figure { margin:0; border-radius:6px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,0.45); position:relative; background:#111; transition:transform 0.25s, box-shadow 0.25s; cursor:pointer; }
+    .sv-gallery-figure:hover { transform:translateY(-4px) scale(1.01); box-shadow:0 10px 32px rgba(0,0,0,0.65); }
+    .sv-gallery-figure img { width:100%; height:240px; object-fit:cover; display:block; transition:opacity 0.2s; }
+    .sv-gallery-figure:hover img { opacity:0.88; }
+    .sv-gallery-figure figcaption { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%); color:rgba(255,255,255,0.85); font-size:0.78em; padding:24px 12px 10px; font-style:italic; letter-spacing:0.03em; }
+    .sv-gallery-wide { grid-column:1/-1; }
+    .sv-gallery-wide img { height:340px !important; }
+    .sv-lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.93); z-index:1000; align-items:center; justify-content:center; flex-direction:column; }
+    .sv-lightbox.open { display:flex; }
+    .sv-lightbox img { max-width:90vw; max-height:82vh; border-radius:4px; box-shadow:0 8px 40px rgba(0,0,0,0.8); }
+    .sv-lightbox-caption { color:rgba(255,255,255,0.6); font-size:0.85em; margin-top:14px; font-style:italic; text-align:center; }
+    .sv-lightbox-close { position:fixed; top:20px; right:28px; color:#fff; font-size:2em; cursor:pointer; background:none; border:none; line-height:1; opacity:0.7; }
+    .sv-lightbox-close:hover { opacity:1; }
+    .sv-lightbox-nav { position:fixed; top:50%; transform:translateY(-50%); background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.3); color:#c9a84c; font-size:1.8em; cursor:pointer; padding:10px 16px; border-radius:4px; line-height:1; }
+    .sv-lightbox-nav:hover { background:rgba(201,168,76,0.3); }
+    .sv-lightbox-prev { left:20px; } .sv-lightbox-next { right:20px; }`;
+
+const SV_LIGHTBOX_HTML = `
+  <div class="sv-lightbox" id="sv-lightbox" onclick="svCloseLightboxOnBackdrop(event)">
+    <button class="sv-lightbox-close" onclick="svCloseLightbox()">✕</button>
+    <button class="sv-lightbox-nav sv-lightbox-prev" onclick="svChangeLightbox(-1)">‹</button>
+    <img id="sv-lightbox-img" src="" alt="" />
+    <p class="sv-lightbox-caption" id="sv-lightbox-caption"></p>
+    <button class="sv-lightbox-nav sv-lightbox-next" onclick="svChangeLightbox(1)">›</button>
+  </div>`;
+
+const SV_LIGHTBOX_JS = `
+<scr` + `ipt>
+let svCurrentGallery = null, svCurrentIndex = 0;
+function svOpenLightbox(galleryId, index) {
+  svCurrentGallery = galleryId; svCurrentIndex = index;
+  const items = window.svGalleries[galleryId].items;
+  document.getElementById('sv-lightbox-img').src = items[index].src;
+  document.getElementById('sv-lightbox-caption').textContent = items[index].caption || '';
+  document.getElementById('sv-lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function svCloseLightbox() {
+  document.getElementById('sv-lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function svCloseLightboxOnBackdrop(e) { if (e.target === document.getElementById('sv-lightbox')) svCloseLightbox(); }
+function svChangeLightbox(dir) {
+  const items = window.svGalleries[svCurrentGallery].items;
+  svCurrentIndex = (svCurrentIndex + dir + items.length) % items.length;
+  const img = document.getElementById('sv-lightbox-img');
+  img.style.opacity = 0;
+  setTimeout(() => {
+    img.src = items[svCurrentIndex].src;
+    document.getElementById('sv-lightbox-caption').textContent = items[svCurrentIndex].caption || '';
+    img.style.opacity = 1;
+  }, 150);
+}
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('sv-lightbox').classList.contains('open')) return;
+  if (e.key === 'ArrowRight') svChangeLightbox(1);
+  if (e.key === 'ArrowLeft') svChangeLightbox(-1);
+  if (e.key === 'Escape') svCloseLightbox();
+});
+</scr` + `ipt>`;
+
 function buildHTML() {
   const title = document.getElementById('post-title').value || 'Untitled';
   const subtitle = document.getElementById('post-subtitle').value;
@@ -419,7 +579,13 @@ function buildHTML() {
   const cats = getCategories();
   const body = quill.root.innerHTML;
   const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
-  const cleanBody = body.replace(/src="data:image[^"]+"/g,'src="images/your-image.jpg"');
+  let cleanBody = body.replace(/src="data:image[^"]+"/g,'src="images/your-image.jpg"');
+  const { html: expandedBody, hasGallery } = expandGalleryMarkers(cleanBody);
+  cleanBody = expandedBody;
+  const galleryCSS = hasGallery ? SV_GALLERY_CSS : '';
+  const galleryLightboxHTML = hasGallery ? SV_LIGHTBOX_HTML : '';
+  const galleryDataScript = hasGallery ? buildGalleryDataScript() : '';
+  const galleryLightboxJS = hasGallery ? SV_LIGHTBOX_JS : '';
   return `<!DOCTYPE HTML>
 <html>
 <head>
@@ -440,6 +606,7 @@ function buildHTML() {
     .category-tag { display:inline-block;background:#c9a84c;color:#111;font-size:0.65em;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:3px 10px;border-radius:2px;margin-right:6px;text-decoration:none; }
     .category-tag:hover { background:#e8d5a3; }
     .post-meta { color:rgba(255,255,255,0.4);font-size:0.82em;letter-spacing:0.06em;margin-bottom:1.8em; }
+    ${galleryCSS}
   </style>
 </head>
 <body class="is-preload">
@@ -504,7 +671,9 @@ function buildHTML() {
       <li><a href="story-editor.html" style="color:#c9a84c;text-decoration:none;" title="Open Story Editor">McQworow Brand</a> · All Rights Reserved</li>
     </ul>
   </div>
+  ${galleryLightboxHTML}
 </div>
+${galleryDataScript}
 <script src="assets/js/jquery.min.js"><\/script>
 <script src="assets/js/jquery.scrollex.min.js"><\/script>
 <script src="assets/js/jquery.scrolly.min.js"><\/script>
@@ -512,6 +681,7 @@ function buildHTML() {
 <script src="assets/js/breakpoints.min.js"><\/script>
 <script src="assets/js/util.js"><\/script>
 <script src="assets/js/main.js"><\/script>
+${galleryLightboxJS}
 </body>
 </html>`;
 }
@@ -595,6 +765,102 @@ function clearAll() {
   showToast('Ready for a new story!');
 }
 
+// ── Gallery Block ─────────────────────────────────────────────────────────
+let galleryItems = [];
+let galleryItemIdCounter = 0;
+
+function openGalleryModal() {
+  galleryItems = [];
+  galleryItemIdCounter = 0;
+  document.getElementById('gallery-items').innerHTML = '';
+  addGalleryItem();
+  addGalleryItem();
+  document.getElementById('gallery-modal').classList.add('open');
+}
+function closeGalleryModal() {
+  document.getElementById('gallery-modal').classList.remove('open');
+}
+
+function addGalleryItem() {
+  const id = 'gi-' + (galleryItemIdCounter++);
+  galleryItems.push({ id, src: '', caption: '' });
+  renderGalleryItems();
+}
+
+function removeGalleryItem(id) {
+  galleryItems = galleryItems.filter(g => g.id !== id);
+  renderGalleryItems();
+}
+
+function renderGalleryItems() {
+  const container = document.getElementById('gallery-items');
+  container.innerHTML = galleryItems.map(g => `
+    <div class="gallery-item-row" id="row-${g.id}">
+      <img id="thumb-${g.id}" src="${g.src || ''}" style="${g.src ? '' : 'opacity:0.2'}" />
+      <div class="gi-fields">
+        <input type="text" placeholder="Image path e.g. images/construction/photo.jpg"
+          value="${g.src}" oninput="updateGalleryItem('${g.id}','src',this.value)" />
+        <input type="text" placeholder="Caption (optional)"
+          value="${g.caption}" oninput="updateGalleryItem('${g.id}','caption',this.value)" />
+      </div>
+      <button class="gi-upload-btn" onclick="triggerGalleryUpload('${g.id}')">Upload</button>
+      <button class="gi-remove" onclick="removeGalleryItem('${g.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function updateGalleryItem(id, field, value) {
+  const item = galleryItems.find(g => g.id === id);
+  if (item) item[field] = value;
+  if (field === 'src') {
+    const thumb = document.getElementById('thumb-' + id);
+    if (thumb) { thumb.src = value; thumb.style.opacity = value ? '1' : '0.2'; }
+  }
+}
+
+function triggerGalleryUpload(id) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const item = galleryItems.find(g => g.id === id);
+    const suggestedPath = 'images/' + file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (item) item.src = suggestedPath;
+      const thumb = document.getElementById('thumb-' + id);
+      if (thumb) { thumb.src = e.target.result; thumb.style.opacity = '1'; }
+      const row = document.getElementById('row-' + id);
+      if (row) { const pathInput = row.querySelector('input'); if (pathInput) pathInput.value = suggestedPath; }
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function insertGalleryBlock() {
+  const validItems = galleryItems.filter(g => g.src.trim());
+  if (validItems.length < 1) { alert('Add at least one image path.'); return; }
+  const layout = document.getElementById('gallery-layout').value;
+
+  const galleryId = 'gallery-' + Date.now();
+  if (!window.svGalleries) window.svGalleries = {};
+  window.svGalleries[galleryId] = { items: validItems, layout };
+
+  // Insert a clearly marked placeholder paragraph that survives Quill's HTML output.
+  // buildHTML() will find this exact text and replace it with the real gallery markup.
+  const range = quill.getSelection(true) || { index: quill.getLength() };
+  const marker = `[[GALLERY:${galleryId}]]`;
+  quill.insertText(range.index, '\n' + marker + '\n', {});
+  quill.setSelection(range.index + marker.length + 2);
+
+  closeGalleryModal();
+  showToast(`Gallery inserted with ${validItems.length} image(s)! Click Generate to see it rendered.`);
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
